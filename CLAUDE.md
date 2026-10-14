@@ -8,6 +8,14 @@ The project runs **Next.js 16.4.0** (App Router, React 19.3). APIs, conventions,
 
 `AGENTS.md` at the project root is generated and re-added by `next dev`. It contains a managed "This is NOT the Next.js you know" block. Do not strip it from a diff — commit it as-is to keep the tree clean.
 
+## Live Docs (Context7)
+
+Before writing code that uses Next.js, Mongoose, NextAuth, Zod, or any other library or framework, pull the current docs through Context7 first (`resolve-library-id`, then `query-docs`). Do not rely on training data for API signatures, config options, or version-specific behavior — the versions pinned in `package.json` are what run here, and they may have moved past what you remember. Query the specific concept you are about to use, not the library in general.
+
+The bundled Next.js docs under `node_modules/next/dist/docs/` stay the authority for Next 16 specifics (see above); use Context7 for everything else, and to cross-check any Next.js API whose behavior looks version-dependent.
+
+If Context7 has no entry for a library, say so before proceeding — do not silently fall back on recall. Name what you could not verify and let the user decide whether to continue, read the package's own types and source in `node_modules/`, or take another route.
+
 ## Commands
 
 - `npm run dev` — dev server on http://localhost:3000 (Turbopack, HMR)
