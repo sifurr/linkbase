@@ -34,3 +34,14 @@ There is no test runner or test files configured — no unit-test command exists
 - Dev and build both default to Turbopack; overrides live in `next.config.ts`.
 
 For runtime verification, `next dev` exposes an MCP server at `/_next/mcp` and forwards browser console errors to the terminal — see `01-app/02-guides/ai-agents.md`.
+
+## Doc Convention
+
+Whenever a new file is created in `docs/`, add it to **Project Docs** below with one line covering what it covers and when to read it. Keep entries in sync when a doc is renamed, moved, or deleted — this index is the only place the docs are discoverable.
+
+## Project Docs
+
+- `docs/architecture.md` — Structural conventions: server/client split, the `src/lib` + `src/components` layout, and naming rules. Read before adding a file, folder, or Server Action so it lands in the right place with the right name.
+- `docs/database.md` — MongoDB + Mongoose conventions: the single cached connection, model location, required schema options, and the rule that every query is scoped to the signed-in user's id. Read before writing any model, query, or query helper.
+- `docs/design-system.md` — Design tokens (fonts, colors, type scale, spacing, radius, shadows, motion) and layout intents, pulled from the design-system source. Read before styling anything or introducing a new color/size/space value; values absent from it are marked TBD — do not invent them.
+- `docs/ui.md` — Component reference: props, variants, states, and the public-profile / admin / marketing layout patterns. Read before building or restyling a UI component; style values quoted there are exact — copy, don't round.
