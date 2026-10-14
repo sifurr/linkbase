@@ -8,6 +8,14 @@ The project runs **Next.js 16.4.0** (App Router, React 19.3). APIs, conventions,
 
 `AGENTS.md` at the project root is generated and re-added by `next dev`. It contains a managed "This is NOT the Next.js you know" block. Do not strip it from a diff — commit it as-is to keep the tree clean.
 
+## Live Docs (Context7)
+
+Before writing code that uses Next.js, Mongoose, NextAuth, Zod, or any other library or framework, pull the current docs through Context7 first (`resolve-library-id`, then `query-docs`). Do not rely on training data for API signatures, config options, or version-specific behavior — the versions pinned in `package.json` are what run here, and they may have moved past what you remember. Query the specific concept you are about to use, not the library in general.
+
+The bundled Next.js docs under `node_modules/next/dist/docs/` stay the authority for Next 16 specifics (see above); use Context7 for everything else, and to cross-check any Next.js API whose behavior looks version-dependent.
+
+If Context7 has no entry for a library, say so before proceeding — do not silently fall back on recall. Name what you could not verify and let the user decide whether to continue, read the package's own types and source in `node_modules/`, or take another route.
+
 ## Commands
 
 - `npm run dev` — dev server on http://localhost:3000 (Turbopack, HMR)
@@ -34,3 +42,21 @@ There is no test runner or test files configured — no unit-test command exists
 - Dev and build both default to Turbopack; overrides live in `next.config.ts`.
 
 For runtime verification, `next dev` exposes an MCP server at `/_next/mcp` and forwards browser console errors to the terminal — see `01-app/02-guides/ai-agents.md`.
+
+## Doc Convention
+
+Whenever a new file is created in `docs/`, add it to **Project Docs** below with one line covering what it covers and when to read it. Keep entries in sync when a doc is renamed, moved, or deleted — this index is the only place the docs are discoverable.
+
+## Project Docs
+
+- `docs/architecture.md` — Structural conventions: server/client split, the `src/lib` + `src/components` layout, and naming rules. Read before adding a file, folder, or Server Action so it lands in the right place with the right name.
+- `docs/auth.md` — NextAuth sign-in and sessions, route protection (`src/proxy.ts`, the Next 16 rename from `middleware`), the four enforcement layers, and the Cache Components rules for session data. Read before touching auth, a protected route, or anything that caches session-derived data.
+- `docs/errors-and-validation.md` — Zod schemas at the Server Action boundary, the `ActionState` result object forms render, throwing for unexpected errors, logging, and what must never reach the client. Read before validating input, returning an action result, or handling a failure.
+- `docs/routing.md` — The route tree: public vs `(dashboard)` vs `(auth)`, per-route `layout`/`loading`/`error` files, and when a Route Handler is allowed. Read before adding a route, or when a route group, `error.tsx`, or an API endpoint is involved.
+- `docs/coding-standards.md` — TypeScript, Prettier/ESLint, import order, component and export style, async, and error handling. Read before writing code in a new file, or when a lint rule or export style is unclear.
+- `docs/git-conventions.md` — Conventional Commits types and subject/body/trailer rules, branch naming (`<type>/<description>`), the PR workflow with squash-and-merge, and the GitHub settings checklist for protecting `main`. Read before committing, naming a branch, or opening a PR.
+- `docs/database.md` — MongoDB + Mongoose conventions: the single cached connection, model location, required schema options, and the rule that every query is scoped to the signed-in user's id. Read before writing any model, query, or query helper.
+- `docs/data-fetching.md` — Where reads happen: Server Components calling query helpers directly (never an internal API route), the `userId` vs `handle` scoping split, the client boundary, and the Cache Components rules — `"use cache"` + `cacheTag`/`cacheLife`, and `revalidateTag`/`updateTag` after a mutation. Read before writing a read path, a query helper, or anything that caches.
+- `docs/security.md` — Secrets and `.env` handling, the security headers set in `next.config.ts`, rate limiting sign-in and link creation, and rendering untrusted link URLs and titles (the `javascript:` URL trap, `rel="noopener noreferrer"`). Read before adding a secret, an env var, a response header, a rate limit, or any code that renders user-supplied content.
+- `docs/design-system.md` — Design tokens (fonts, colors, type scale, spacing, radius, shadows, motion) and layout intents, pulled from the design-system source. Read before styling anything or introducing a new color/size/space value; values absent from it are marked TBD — do not invent them.
+- `docs/ui.md` — Component reference: props, variants, states, and the public-profile / admin / marketing layout patterns. Read before building or restyling a UI component; style values quoted there are exact — copy, don't round.
