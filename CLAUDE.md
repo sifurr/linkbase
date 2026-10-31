@@ -22,3 +22,14 @@ This repo runs **Next.js 16.4.3**, which has breaking API, convention, and file-
 ## Gotchas
 
 - `next.config.ts` enables non-default flags: `cacheComponents`, `partialPrefetching`, and a Turbopack rule routing `*.css` through `@tailwindcss/turbopack`. Keep these in mind when debugging caching, prefetch, or CSS behavior.
+
+## Doc Convention
+
+Whenever a new file is created in `/docs`, add it to the **Project Docs** section below with one line on what it covers and when to read it.
+
+### Project Docs
+
+- [`docs/architecture.md`](docs/architecture.md) — Rendering model (Server/Client Components), directory layout (`app/`, `lib/`, `components/`), and naming conventions. Read before adding a new file, folder, or Server Action.
+- [`docs/database.md`](docs/database.md) — MongoDB + Mongoose: single cached connection, models in `lib/db/models`, schema conventions (strict, timestamps, indexes), and the user-scoped query rule. Read before writing a model or any query.
+- [`docs/design-system.md`](docs/design-system.md) — Design foundations (color, type, spacing, tokens) pulled from the design-system source. Read before styling anything or choosing tokens/Tailwind utilities.
+- [`docs/ui.md`](docs/ui.md) — UI component contracts (props, variants, states) for the React primitives. Read before building or using a shared component.
