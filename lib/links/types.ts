@@ -21,3 +21,15 @@ export type LinkView = {
   title: string;
   url: string;
 };
+
+/**
+ * The public profile at `/user/[handle]`, scoped to the route handle and
+ * exposing only what a profile is meant to show — never anything session-scoped
+ * (`docs/auth.md` §3, `docs/data-fetching.md` §2).
+ */
+export type PublicProfile = {
+  handle: string;
+  /** Optional display name; the page falls back to the handle when absent. */
+  name?: string;
+  links: LinkView[];
+};
