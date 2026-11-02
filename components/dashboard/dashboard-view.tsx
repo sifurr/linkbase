@@ -8,17 +8,18 @@ import {
   ListChecks,
   Paintbrush,
   Settings as SettingsIcon,
-  Share2,
   SlidersHorizontal,
   Sparkles,
   SquareUser,
 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import type { ComponentType, ReactNode } from "react";
 
 import { LinksPanel } from "@/components/dashboard/links-panel";
 import { PhonePreview } from "@/components/dashboard/phone-preview";
+import { ShareMenu } from "@/components/dashboard/share-menu";
 import { Button } from "@/components/ui/button";
 import type { LinkView } from "@/lib/links/types";
 
@@ -227,28 +228,16 @@ export function DashboardView({ handle, links }: DashboardViewProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between gap-3 px-4 py-3.5 md:px-7 md:py-4.5">
-        <button
-          type="button"
-          aria-label="Back"
-          className="hidden h-10 w-10 cursor-pointer items-center justify-center rounded-full text-lb-ink hover:bg-lb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-ink md:inline-flex"
+        <Link
+          href="/"
+          aria-label="Back to home"
+          className="inline-flex h-10 w-10 flex-shrink-0 cursor-pointer items-center justify-center rounded-full text-lb-ink hover:bg-lb-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lb-ink"
           style={{ border: "none", background: "transparent" }}
         >
           <ArrowLeft size={22} />
-        </button>
+        </Link>
 
-        <a
-          href={`/user/${handle}`}
-          className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full md:flex-none md:justify-start"
-          style={{
-            border: "1px solid var(--border-strong)",
-            padding: "10px 18px",
-            fontWeight: 600,
-            fontSize: "var(--fs-body)",
-          }}
-        >
-          <span className="truncate">linkbase.co/{handle}</span>
-          <Share2 size={15} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-        </a>
+        <ShareMenu handle={handle} />
 
         <Button
           type="button"
