@@ -5,6 +5,9 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 
 export { auth, signIn, signOut } from "@/auth";
+// Server-side session patch (Auth.js v5). Used by the onboarding action to push
+// the new handle onto the JWT via the `jwt` callback's `trigger: "update"`.
+export { unstable_update as updateSession } from "@/auth";
 
 /**
  * The Data Access Layer entry point: resolve the signed-in user from the

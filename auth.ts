@@ -13,7 +13,7 @@ import { loginSchema } from "@/lib/validation/auth";
  * JWT and session. Session strategy is JWT — required for Credentials, and it
  * needs no database adapter.
  */
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const { handlers, auth, signIn, signOut, unstable_update } = NextAuth({
   ...authConfig,
   session: { strategy: "jwt" },
   providers: [
@@ -54,18 +54,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // `authorized` + `session` come from authConfig (edge-safe); we only add
+    // the Node `jwt` callback here.
     ...authConfig.callbacks,
-    jwt({ token, user }) {
+    jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id as string;
         token.handle = user.handle ?? null;
       }
+      // `updateSession({ user: { handle } })` from a Server Action lands here so
+      // the newly-set handle propagates onto the JWT without a re-login.
+      if (trigger === "update" && session && typeof session === "object") {
+        const data = session as { user?: { handle?: unknown } };
+        if (typeof data.user?.handle === "string") {
+          token.handle = data.user.handle;
+        }
+      }
       return token;
-    },
-    session({ session, token }) {
-      session.user.id = token.id;
-      session.user.handle = token.handle;
-      return session;
     },
   },
 });

@@ -26,5 +26,15 @@ export const authConfig = {
 
       return true;
     },
+    // Edge-safe (token-only, no DB): shapes the session so BOTH the edge proxy
+    // (`req.auth.user.handle`) and Node Server Components read `id`/`handle`.
+    // The Node instance (`auth.ts`) inherits this via `...authConfig.callbacks`.
+    session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id;
+        session.user.handle = token.handle;
+      }
+      return session;
+    },
   },
 } satisfies NextAuthConfig;
