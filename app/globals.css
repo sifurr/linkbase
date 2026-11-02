@@ -158,3 +158,8 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+/* Modal backdrop for the native <dialog> primitive (components/ui/dialog.tsx). */
+dialog.lb-dialog::backdrop {
+  background: rgba(14, 14, 14, 0.45);
+}

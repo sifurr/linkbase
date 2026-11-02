@@ -2,7 +2,11 @@ import { connection } from "next/server";
 
 import type { Metadata } from "next";
 
+import { DashboardView } from "@/components/dashboard/dashboard-view";
 import { requireUser } from "@/lib/auth";
+import { dbConnect } from "@/lib/db";
+import { User } from "@/lib/db/models/user";
+import { getUserLinks } from "@/lib/links/queries";
 
 export const metadata: Metadata = {
   title: "Dashboard · Linkbase",
@@ -10,24 +14,19 @@ export const metadata: Metadata = {
 };
 
 /**
- * Placeholder dashboard — the signed-in home. The proxy gate guarantees the
- * visitor is authenticated and has a handle; `requireUser` is a server-side
- * backstop. Real content comes in a later feature.
+ * The signed-in home. The proxy gate guarantees an authenticated user with a
+ * handle; `requireUser` is the server-side backstop. Reads the user's links
+ * (scoped to the session id) and hands them to the client dashboard.
  */
 export default async function DashboardPage() {
-  // Per-session page: force request-time rendering before the session read so
-  // it isn't attempted during the static-shell prerender under `cacheComponents`.
+  // Request-time render before the session read (cacheComponents).
   await connection();
-  await requireUser();
+  const sessionUser = await requireUser();
 
-  return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
-      <h1
-        className="font-display font-black tracking-[-0.02em]"
-        style={{ fontSize: "var(--fs-title)", color: "var(--lb-ink)" }}
-      >
-        Dashboard
-      </h1>
-    </main>
-  );
+  await dbConnect();
+  const user = await User.findById(sessionUser.id).select("handle");
+  const handle = user?.handle ?? sessionUser.handle ?? "";
+  const links = await getUserLinks(sessionUser.id);
+
+  return <DashboardView handle={handle} links={links} />;
 }
