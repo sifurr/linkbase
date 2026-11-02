@@ -47,9 +47,10 @@ Both flows run these first. **A failing check blocks the deploy** — this is en
 | Check | Command | What it guards |
 | --- | --- | --- |
 | **Lint** | `npm run lint` | `eslint-config-next` (core-web-vitals + TypeScript) rules |
-| **Typecheck** | `npm run typecheck` (`tsc --noEmit`) | TypeScript strict-mode correctness ([`coding-standards.md`](coding-standards.md)) |
+| **Typecheck** | `npm run typecheck` (`next typegen && tsc --noEmit`) | TypeScript strict-mode correctness ([`coding-standards.md`](coding-standards.md)) |
 | **Unit tests** | `npm run test` | Vitest tests for pure functions and Zod schemas ([`testing.md`](testing.md)) |
 
+- **Typecheck generates route types first.** Next.js emits global route-type helpers (e.g. `LayoutProps`, `PageProps`) into `.next/types/` during `next dev`/`next build`/`next typegen`. A clean CI checkout has none, so `npm run typecheck` runs `next typegen` before `tsc` — otherwise `tsc` fails with `Cannot find name 'LayoutProps'`.
 - **Unit tests only** run in CI. End-to-end QA is Playwright MCP driven through the `run-qa-suite` skill against a local test database and is **not** part of the automated pipeline (see [`testing.md`](testing.md)); run it manually before merging changes that touch Server Actions or data flows.
 - Unit tests need **no database** — they cover pure logic, so CI never connects to MongoDB. The pipeline does not provision `MONGODB_URI`/`MONGODB_URI_TEST` for the checks job.
 - Keep the check commands here identical to the scripts in `package.json` so local `npm run lint && npm run typecheck && npm run test` reproduces CI exactly.
