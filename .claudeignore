@@ -46,3 +46,8 @@ Thumbs.db
 
 # Vercel
 .vercel/
+
+
+# skills (managed by the skills CLI)
+/.agents
+skills-lock.json
