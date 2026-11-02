@@ -1,7 +1,11 @@
 import NextAuth from "next-auth";
 
 import { authConfig } from "@/auth.config";
-import { PROTECTED_PREFIXES } from "@/lib/auth/routes";
+import {
+  ONBOARDING_PATH,
+  POST_ONBOARDING_REDIRECT,
+  PROTECTED_PREFIXES,
+} from "@/lib/auth/routes";
 
 /**
  * Next.js 16 Proxy (formerly `middleware.ts`). As of Next.js 16 the file is
@@ -20,18 +24,31 @@ import { PROTECTED_PREFIXES } from "@/lib/auth/routes";
 const { auth } = NextAuth(authConfig);
 
 export const proxy = auth((req) => {
-  const { pathname } = req.nextUrl;
+  const { pathname, origin } = req.nextUrl;
+  const user = req.auth?.user;
   const isProtected = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+  const onOnboarding =
+    pathname === ONBOARDING_PATH || pathname.startsWith(`${ONBOARDING_PATH}/`);
 
-  if (isProtected && !req.auth?.user) {
-    const loginUrl = new URL("/login", req.nextUrl.origin);
+  // Unauthenticated on a protected path → sign in, preserving the return URL.
+  if (isProtected && !user) {
+    const loginUrl = new URL("/login", origin);
     loginUrl.searchParams.set("callbackUrl", req.nextUrl.href);
     return Response.redirect(loginUrl);
+  }
+
+  // Handle gate. Authenticated with no handle → force onboarding on any other
+  // protected route; already has a handle → onboarding is done, go home.
+  if (user && !user.handle && isProtected && !onOnboarding) {
+    return Response.redirect(new URL(ONBOARDING_PATH, origin));
+  }
+  if (user?.handle && onOnboarding) {
+    return Response.redirect(new URL(POST_ONBOARDING_REDIRECT, origin));
   }
 });
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/select-handle/:path*"],
+  matcher: ["/onboarding/:path*", "/dashboard/:path*"],
 };

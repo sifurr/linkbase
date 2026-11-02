@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 import { signIn, signOut } from "@/auth";
-import { POST_AUTH_REDIRECT } from "@/lib/auth/routes";
+import { ONBOARDING_PATH, POST_ONBOARDING_REDIRECT } from "@/lib/auth/routes";
 import { rateLimit } from "@/lib/auth/rate-limit";
 import type { AuthFormState } from "@/lib/auth/types";
 import { dbConnect } from "@/lib/db";
@@ -58,11 +58,20 @@ export async function logIn(
     return { fieldErrors };
   }
 
+  // Gate-driven destination: users who still need a handle go to onboarding,
+  // everyone else to the landing page. (If credentials are wrong, `signIn`
+  // throws before the redirect, so the target is moot.)
+  await dbConnect();
+  const existing = await User.findOne({ email: parsed.data.email }).select(
+    "handle",
+  );
+  const redirectTo = existing?.handle ? POST_ONBOARDING_REDIRECT : ONBOARDING_PATH;
+
   try {
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: POST_AUTH_REDIRECT,
+      redirectTo,
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -120,10 +129,11 @@ export async function signUp(
   await User.create({ email, passwordHash });
 
   try {
+    // New accounts never have a handle yet → straight to onboarding.
     await signIn("credentials", {
       email,
       password,
-      redirectTo: POST_AUTH_REDIRECT,
+      redirectTo: ONBOARDING_PATH,
     });
   } catch (error) {
     if (error instanceof AuthError) {
