@@ -2,6 +2,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Emit a self-contained `.next/standalone` server for the production Docker
+  // image (see `Dockerfile`). Vercel ignores this and uses its own build
+  // output, so it is safe to keep on for both targets.
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
