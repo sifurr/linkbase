@@ -13,6 +13,8 @@
 
 # testing
 /coverage
+# Playwright MCP QA artifacts (snapshots/console logs from the run-qa-suite skill)
+/.playwright-mcp/
 
 # next.js
 /.next/
