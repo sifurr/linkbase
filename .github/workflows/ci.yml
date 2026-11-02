@@ -1,0 +1,172 @@
+name: CI/CD
+
+# One pipeline, two deploy flows (see docs/deployment.md):
+#   - Pull request -> main : run checks, deploy a Vercel PREVIEW build.
+#   - Push to main         : run checks, deploy to Vercel PRODUCTION.
+# Nothing deploys unless the `checks` job passes first (`needs: [checks]`).
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Least privilege: read the repo, and write PR comments for the preview URL.
+permissions:
+  contents: read
+  pull-requests: write
+
+# Reproducible environment for every job: a pinned Node image matching the
+# Dockerfile base. node:22-bookworm (non-slim) ships git, which actions/checkout
+# needs. Bump this and the Dockerfile's NODE_VERSION together.
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+# Supersede in-flight runs for the same ref. Cancel stale PR runs, but never
+# cancel an in-progress production deploy.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Gate: lint, typecheck, and unit tests must all pass before any deploy.
+  # Unit tests cover pure logic only and need no database (see docs/testing.md).
+  # ---------------------------------------------------------------------------
+  checks:
+    name: Lint, typecheck & test
+    runs-on: ubuntu-latest
+    container:
+      image: node:22-bookworm
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: npm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test
+
+  # ---------------------------------------------------------------------------
+  # Preview deploy: pull requests from THIS repo (forks can't access secrets).
+  # ---------------------------------------------------------------------------
+  deploy-preview:
+    name: Deploy preview
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    needs: [checks]
+    runs-on: ubuntu-latest
+    container:
+      image: node:22-bookworm
+    environment:
+      name: Preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel preview environment
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project
+        run: vercel build --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt output (preview)
+        id: deploy
+        run: |
+          url="$(vercel deploy --prebuilt --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Preview deployed to $url"
+          {
+            echo "### ✅ Preview deployment"
+            echo ""
+            echo "$url"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Comment preview URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = ${{ toJSON(steps.deploy.outputs.url) }};
+            const marker = '<!-- linkbase-preview -->';
+            const body = `${marker}\n### ✅ Preview deployment ready\n\n${url}\n\n_Updated for commit ${context.sha.slice(0, 7)}._`;
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+  # ---------------------------------------------------------------------------
+  # Production deploy: only on push to main (i.e. after a reviewed PR merge).
+  # ---------------------------------------------------------------------------
+  deploy-production:
+    name: Deploy production
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [checks]
+    runs-on: ubuntu-latest
+    container:
+      image: node:22-bookworm
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel production environment
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build project (production)
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy prebuilt output (production)
+        id: deploy
+        run: |
+          url="$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Production deployed to $url"
+          {
+            echo "### 🚀 Production deployment"
+            echo ""
+            echo "$url"
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

@@ -1,0 +1,38 @@
+# Dependencies & build output (reinstalled/rebuilt inside the image)
+node_modules
+.next
+out
+build
+coverage
+*.tsbuildinfo
+
+# Secrets — never copy any real env file into the build context/image
+.env
+.env.*
+!.env.example
+*.pem
+
+# Vercel / CI / VCS metadata
+.vercel
+.git
+.github
+.gitignore
+
+# Local tooling & QA artifacts
+.playwright-mcp
+.claude
+.agents
+skills-lock.json
+plans
+
+# Docs & editor noise (not needed at runtime)
+docs
+*.md
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+
+# Logs
+*.log
+npm-debug.log*
